@@ -9,7 +9,7 @@ def main():
     
     # print(x + 10)
 
-    print(y.reshape((2, -1)).shape)
+    print(y.reshape((3, -1)).shape)
     # print(z.numpy())
 
 if __name__ == "__main__":
