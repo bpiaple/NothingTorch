@@ -19,6 +19,7 @@ class Tensor(object):
         self.data = jnp.array(data, dtype=jnp.float32)
         self.shape = self.data.shape
         self.size = self.data.size
+        self.dtype = self.data.dtype
         self.requires_grad = requires_grad
 
         # Gradient features
@@ -164,7 +165,7 @@ class Tensor(object):
 
         # Handle -1 in shape for automatic dimension inference
         if -1 in new_shape:
-            if new_shape.count(-1) > -1:
+            if new_shape.count(-1) > 1:
                 raise ValueError("Can only specify one unknown dimension.")
             
             # Calculate the unknown dimension
@@ -180,9 +181,11 @@ class Tensor(object):
             new_shape = tuple(new_shape)
 
         # Validate total elements remain the same
-        if jnp.prod(jnp.array(new_shape)) != self.size:
+        new_size = int(jnp.prod(jnp.array(new_shape)))
+        if new_size != self.size:
             raise ValueError(
-                f"Cannot reshape tensor of size {self.size} into shape {new_shape}."
+                f"Cannot reshape tensor: Total elements must match. "
+                f"{self.size} ≠ {new_size}"
             )
         
         # Reshape data
@@ -253,4 +256,3 @@ class Tensor(object):
         Compute gradients for the tensor.
         """
         pass  # Placeholder for gradient computation logic
-    
