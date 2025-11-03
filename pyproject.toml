@@ -1,7 +1,7 @@
 [project]
 name = "nothingtorch"
 version = "0.1.0"
-description = "Add your description here"
+description = "A minimal deep learning framework built from scratch using JAX."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []
