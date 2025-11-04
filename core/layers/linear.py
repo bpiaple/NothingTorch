@@ -1,0 +1,49 @@
+import jax
+import jax.numpy as jnp
+
+from core.tensor import Tensor
+
+seed = 42
+
+class Linear:
+    """
+    A fully connected neural network layer (y = xW + b).
+    """
+    def __init__(self, in_features: int, out_features: int, bias:bool = True):
+        self.in_features = in_features
+        self.out_features = out_features
+
+        key = jax.random.PRNGKey(seed)
+        self.weight = Tensor(
+            jax.random.normal(key, (in_features, out_features)) * jnp.sqrt(1.0 / in_features),
+            requires_grad=True,
+        )
+        if not bias:
+            self.bias = None
+        else:
+            self.bias = Tensor(jnp.zeros(out_features), requires_grad=True)
+
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        Forward pass through the dense layer (y = xW + b).
+        """
+        output = x.matmul(self.weight)
+        if self.bias is not None:
+            output = output + self.bias
+        return output
+    
+    def __call__(self, x: Tensor) -> Tensor:
+        """Allow the layer to be called like a function."""
+        return self.forward(x)
+    
+    def __repr__(self) -> str:
+        return f"Linear(in_features={self.in_features}, out_features={self.out_features}, bias={self.bias is not None})"
+    
+    def parameters(self):
+        """
+        Return the list of trainable parameters (weight and bias).
+        """
+        params = [self.weight]
+        if self.bias is not None:
+            params.append(self.bias)
+        return params
