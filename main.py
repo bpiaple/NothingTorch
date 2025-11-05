@@ -13,7 +13,7 @@ def main():
     print("Hello from nothingtorch!")
 
     # Test basic layer functionality
-    layer = Linear(input_size=3, output_size=2)
+    layer = Linear(in_features=3, out_features=2)
     x = Tensor([[1.0, 2.0, 3.0]])
     y = layer(x)
     print(f"Input shape: {x.shape}, Output shape: {y.shape}")

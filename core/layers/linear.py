@@ -47,3 +47,31 @@ class Linear:
         if self.bias is not None:
             params.append(self.bias)
         return params
+
+
+class Dropout:
+    """
+    Dropout layer for regularization.
+    """
+    def __init__(self, p: float = 0.5):
+        self.p = p
+
+    def forward(self, x: Tensor, training: bool = False) -> Tensor:
+        """
+        Forward pass through the dropout layer.
+        """
+        if not training or self.p == 0.0:
+            return x
+        else:
+            key = jax.random.PRNGKey(seed)
+            mask = jax.random.bernoulli(key, 1 - self.p, x.data.shape)
+            dropped = x.data * mask / (1 - self.p)
+            return Tensor(dropped, requires_grad=x.requires_grad)
+
+    def __call__(self, x: Tensor, training: bool = False) -> Tensor:
+        """Allow the layer to be called like a function."""
+        return self.forward(x, training=training)
+
+    def __repr__(self) -> str:
+        return f"Dropout(p={self.p})"
+    
