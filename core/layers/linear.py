@@ -5,17 +5,20 @@ from core.tensor import Tensor
 
 seed = 42
 
+
 class Linear:
     """
     A fully connected neural network layer (y = xW + b).
     """
-    def __init__(self, in_features: int, out_features: int, bias:bool = True):
+
+    def __init__(self, in_features: int, out_features: int, bias: bool = True):
         self.in_features = in_features
         self.out_features = out_features
 
         key = jax.random.PRNGKey(seed)
         self.weight = Tensor(
-            jax.random.normal(key, (in_features, out_features)) * jnp.sqrt(1.0 / in_features),
+            jax.random.normal(key, (in_features, out_features))
+            * jnp.sqrt(1.0 / in_features),
             requires_grad=True,
         )
         if not bias:
@@ -31,14 +34,14 @@ class Linear:
         if self.bias is not None:
             output = output + self.bias
         return output
-    
+
     def __call__(self, x: Tensor) -> Tensor:
         """Allow the layer to be called like a function."""
         return self.forward(x)
-    
+
     def __repr__(self) -> str:
         return f"Linear(in_features={self.in_features}, out_features={self.out_features}, bias={self.bias is not None})"
-    
+
     def parameters(self):
         """
         Return the list of trainable parameters (weight and bias).
@@ -53,7 +56,10 @@ class Dropout:
     """
     Dropout layer for regularization.
     """
+
     def __init__(self, p: float = 0.5):
+        if not 0.0 <= p <= 1.0:
+            raise ValueError("Dropout probability must be in the range [0.0, 1.0]")
         self.p = p
 
     def forward(self, x: Tensor, training: bool = False) -> Tensor:
@@ -62,16 +68,20 @@ class Dropout:
         """
         if not training or self.p == 0.0:
             return x
-        else:
-            key = jax.random.PRNGKey(seed)
-            mask = jax.random.bernoulli(key, 1 - self.p, x.data.shape)
-            dropped = x.data * mask / (1 - self.p)
-            return Tensor(dropped, requires_grad=x.requires_grad)
+        if self.p == 1.0:
+            return Tensor(jnp.zeros_like(x.data), requires_grad=x.requires_grad)
+        
+        keep_prob = 1 - self.p
+
+        key = jax.random.PRNGKey(seed)
+        mask = jax.random.bernoulli(key, p=keep_prob, shape=x.shape).astype(jnp.float32)
+        mask_tensor = Tensor(mask, requires_grad=False)
+        output = x * mask_tensor / keep_prob
+        return output
 
     def __call__(self, x: Tensor, training: bool = False) -> Tensor:
         """Allow the layer to be called like a function."""
-        return self.forward(x, training=training)
+        return self.forward(x, training)
 
     def __repr__(self) -> str:
         return f"Dropout(p={self.p})"
-    
