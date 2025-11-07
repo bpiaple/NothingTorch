@@ -61,6 +61,7 @@ class Dropout:
         if not 0.0 <= p <= 1.0:
             raise ValueError("Dropout probability must be in the range [0.0, 1.0]")
         self.p = p
+        self.key = jax.random.PRNGKey(42)
 
     def forward(self, x: Tensor, training: bool = False) -> Tensor:
         """
@@ -72,11 +73,10 @@ class Dropout:
             return Tensor(jnp.zeros_like(x.data), requires_grad=x.requires_grad)
         
         keep_prob = 1 - self.p
-
-        key = jax.random.PRNGKey(seed)
-        mask = jax.random.bernoulli(key, p=keep_prob, shape=x.shape).astype(jnp.float32)
-        mask_tensor = Tensor(mask, requires_grad=False)
-        output = x * mask_tensor / keep_prob
+        self.key, subkey = jax.random.split(self.key)
+        mask = jax.random.bernoulli(subkey, p=keep_prob, shape=x.shape).astype(jnp.float32)
+        
+        output = x * mask / keep_prob
         return output
 
     def __call__(self, x: Tensor, training: bool = False) -> Tensor:
