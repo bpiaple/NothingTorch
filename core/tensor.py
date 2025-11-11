@@ -24,7 +24,7 @@ class Tensor(object):
 
         # Gradient features
         self.requires_grad = requires_grad
-        self.grad = None
+        self._grad_fn = None
 
     def __repr__(self):
         """
