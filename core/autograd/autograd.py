@@ -322,6 +322,74 @@ class CrossEntropyBackward(Function):
 
 def enable_autograd():
     """Enable autograd functionality in the framework."""
-    Tensor.enable_autograd()
-    Function.enable_autograd()
+
+    # Check if already enabled
+    if Tensor._autograd_enabled and Function._autograd_enabled:
+        print("Autograd is already enabled.")
+        return
     
+    # Store original operations
+    _original_add = Tensor.__add__
+    _original_mul = Tensor.__mul__
+    _original_matmul = Tensor.__matmul__ if hasattr(Tensor, '__matmul__') else None
+
+    # Enhanced operations that track gradients
+    def tracked_add(self, other):
+        """Addition operation with autograd tracking."""
+        if not isinstance(other, (Tensor, int, float)):
+            other = Tensor(other)
+        
+        # Call original operation
+        result = _original_add(self, other)
+
+        # Track gradient if required
+        if self.requires_grad or other.requires_grad:
+            result.requires_grad = True
+            result._grad_fn = AddBackward(self, other)
+        
+        return result
+    
+    def tracked_mul(self, other):
+        """Multiplication operation with autograd tracking."""
+        if not isinstance(other, (Tensor)):
+            other_tensor = Tensor(other)
+        else:
+            other_tensor = other
+        
+        # Call original operation
+        result = _original_mul(self, other_tensor)
+
+        # Track gradient if required
+        if self.requires_grad or (isinstance(other_tensor, Tensor) and other_tensor.requires_grad):
+            result.requires_grad = True
+            result._grad_fn = MulBackward(self, other_tensor)
+        
+        return result
+
+    def tracked_matmul(self, other):
+        """Matrix multiplication operation with autograd tracking."""
+        if _original_matmul:
+            result = _original_matmul(self, other)
+        else:
+            # Fallback to using jnp.dot if __matmul__ is not defined
+            result = Tensor(jnp.dot(self.data, other.data))
+
+        # Track gradient if required
+        if self.requires_grad or other.requires_grad:
+            result.requires_grad = True
+            result._grad_fn = MatmulBackward(self, other)
+        
+        return result
+    
+    def sum_op(self, axis=None, keepdims=False):
+        """Summation operation with autograd tracking."""
+        # Call original sum operation
+        result = Tensor(jnp.sum(self.data, axis=axis, keepdims=keepdims))
+
+        # Track gradient if required
+        if self.requires_grad:
+            result.requires_grad = True
+            result._grad_fn = SumBackward(self)
+        
+        return result
+
